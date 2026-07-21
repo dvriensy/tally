@@ -36,7 +36,7 @@ export function AnimatedLogo() {
 
   return (
     <motion.div
-      className="flex items-center gap-3 cursor-pointer select-none py-2 px-3.5 rounded-2xl hover:bg-slate-500/5 dark:hover:bg-neutral-800/25 transition-all relative"
+      className="flex flex-col sm:flex-row items-center gap-1 sm:gap-3 cursor-pointer select-none py-1.5 sm:py-2 px-2 sm:px-3.5 rounded-2xl hover:bg-slate-500/5 dark:hover:bg-neutral-800/25 transition-all relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleLogoClick}
@@ -66,8 +66,8 @@ export function AnimatedLogo() {
         ))}
       </AnimatePresence>
 
-      {/* The Exquisite Dual-Puppy Logo illustration (Reduced to 50px height!) */}
-      <div className="relative w-[125px] h-[50px] flex items-center justify-center overflow-visible">
+      {/* The Exquisite Dual-Puppy Logo illustration (Responsive!) */}
+      <div className="relative w-[105px] h-[42px] sm:w-[125px] sm:h-[50px] flex items-center justify-center overflow-visible">
         {/* Subtle glow halo in back */}
         <div
           className={`absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400/10 via-amber-400/5 to-emerald-400/10 blur-xl pointer-events-none transition-opacity duration-300 ${
@@ -77,7 +77,7 @@ export function AnimatedLogo() {
 
         {/* Vector SVG containing the Rottie, Corgi, trend arrow, and gold coins stack */}
         <svg
-          className="w-[125px] h-[50px] overflow-visible"
+          className="w-[105px] h-[42px] sm:w-[125px] sm:h-[50px] overflow-visible"
           viewBox="0 0 130 52"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -326,7 +326,7 @@ export function AnimatedLogo() {
       </div>
 
       {/* Balanced 32px Typography next to the logo */}
-      <div className="flex items-center font-bold text-[32px] tracking-tight text-[#1f5f6e] dark:text-[#38a5be] font-sans">
+      <div className="flex items-center font-bold text-2xl sm:text-[32px] tracking-tight text-[#1f5f6e] dark:text-[#38a5be] font-sans leading-none">
         Tally
       </div>
     </motion.div>

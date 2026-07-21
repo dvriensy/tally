@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { useBudgetStore } from "./useBudgetStore";
 import { BiometricOverlay } from "./components/BiometricOverlay";
 import { DashboardView } from "./components/DashboardView";
@@ -30,7 +31,9 @@ import {
   RefreshCw,
   Fingerprint,
   LogOut,
-  Home
+  Home,
+  Menu,
+  X
 } from "lucide-react";
 
 export default function App() {
@@ -151,6 +154,7 @@ interface AppWithStoreProps {
 function AppWithStore({ houseId, role, onSignOut, isDemo }: AppWithStoreProps) {
   const store = useBudgetStore(houseId, role);
   const [activeTab, setActiveTab] = useState<"dashboard" | "expenses" | "calendar" | "goals" | "household" | "settings">("dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const summary = store.getSplitsSummary();
 
@@ -177,14 +181,14 @@ function AppWithStore({ houseId, role, onSignOut, isDemo }: AppWithStoreProps) {
       <div className="flex-1">
         {/* Persistent Nav Top Bar */}
         <header className="sticky top-0 z-30 bg-white/95 dark:bg-sophisticated-bg/90 backdrop-blur-md border-b border-gray-300 dark:border-subtle">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
             
             {/* Logo Title - Beautifully Animated & Fun Logo and name lettering */}
-            <div className="flex flex-col items-start gap-1">
+            <div className="flex flex-col items-center md:items-start gap-1">
               <AnimatedLogo />
               
               {/* Cloud Synchronization status indicator */}
-              <div className="flex items-center gap-1.5 pl-2 mt-[-4px]">
+              <div className="flex items-center gap-1.5 md:pl-2 mt-[-2px] md:mt-[-4px]">
                 {store.syncStatus === "synced" ? (
                   <span className="flex items-center gap-1 text-[9px] text-emerald-600 dark:text-accent-emerald font-mono uppercase tracking-wider font-semibold">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -301,8 +305,67 @@ function AppWithStore({ houseId, role, onSignOut, isDemo }: AppWithStoreProps) {
         {/* Main Content Area Container */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           
+          {/* Mobile Navigation Dropdown/Trigger */}
+          <div className="md:hidden relative">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="w-full bg-white dark:bg-sophisticated-card border border-gray-300 dark:border-subtle rounded-xl px-4 py-3 flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-white shadow-xs"
+            >
+              <div className="flex items-center gap-2">
+                {React.createElement(tabs.find(t => t.id === activeTab)?.icon || LayoutDashboard, { className: "w-5 h-5 text-emerald-600 dark:text-accent-emerald" })}
+                <span>{tabs.find(t => t.id === activeTab)?.name}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] uppercase font-mono tracking-wider text-gray-400">Menu</span>
+                {mobileMenuOpen ? <X className="w-4 h-4 text-gray-500" /> : <Menu className="w-4 h-4 text-gray-500" />}
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <>
+                  {/* Backdrop to close the menu */}
+                  <div className="fixed inset-0 z-10" onClick={() => setMobileMenuOpen(false)} />
+                  
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 right-0 mt-2 z-20 bg-white dark:bg-sophisticated-card border border-gray-300 dark:border-subtle rounded-xl shadow-xl divide-y divide-gray-100 dark:divide-neutral-800 overflow-hidden"
+                  >
+                    {tabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const isActive = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            setActiveTab(tab.id);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-3.5 flex items-center gap-3 transition-colors text-sm font-medium ${
+                            isActive
+                              ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-accent-emerald"
+                              : "text-gray-700 hover:bg-gray-50 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                          }`}
+                        >
+                          <Icon className="w-4.5 h-4.5 shrink-0" />
+                          <span>{tab.name}</span>
+                          {isActive && (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
           {/* Sub Navigation Bar Tabs */}
-          <div className="flex border-b border-gray-300 dark:border-subtle overflow-x-auto space-x-6 pb-px scrollbar-thin">
+          <div className="hidden md:flex border-b border-gray-300 dark:border-subtle overflow-x-auto space-x-6 pb-px scrollbar-thin">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;

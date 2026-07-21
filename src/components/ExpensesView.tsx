@@ -316,7 +316,106 @@ export function ExpensesView({
 
       {/* Expense ledger list */}
       <div className="bg-white dark:bg-sophisticated-card border border-gray-300 dark:border-subtle rounded-2xl overflow-hidden shadow-xs">
-        <div className="overflow-x-auto scrollbar-thin">
+        
+        {/* Mobile View: Stacked Transaction Cards (visible only on mobile) */}
+        <div className="block md:hidden divide-y divide-gray-200 dark:divide-subtle">
+          {filteredExpenses.length === 0 ? (
+            <div className="py-12 text-center text-gray-400 dark:text-neutral-500 text-sm">
+              No transactions match your filters.
+            </div>
+          ) : (
+            filteredExpenses.map((exp) => {
+              const isA = exp.paidById === "user_a";
+              const categoryObj = categories.find((c) => c.name === exp.category);
+              const Icon = categoryObj ? (iconMap[categoryObj.icon] || FileText) : FileText;
+
+              return (
+                <motion.div
+                  key={exp.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 space-y-3"
+                >
+                  {/* Row 1: Category & Total Amount */}
+                  <div className="flex justify-between items-center">
+                    <span 
+                      className="px-2.5 py-0.5 rounded-sm text-[10px] font-bold flex items-center gap-1 text-white uppercase tracking-wider"
+                      style={{ backgroundColor: categoryObj?.color || "#6b7280" }}
+                    >
+                      <Icon className="w-2.5 h-2.5" />
+                      {exp.category}
+                    </span>
+                    <span className="font-bold text-gray-900 dark:text-white font-mono text-base">
+                      ${exp.amount.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Row 2: Title & Date */}
+                  <div>
+                    <div className="font-bold text-gray-950 dark:text-white text-sm">{exp.title}</div>
+                    <div className="text-xs text-gray-600 dark:text-neutral-500 mt-1 flex items-center gap-1 font-medium">
+                      <Calendar className="w-3.5 h-3.5" />
+                      {exp.date}
+                    </div>
+                  </div>
+
+                  {/* Row 3: Paid Upfront and Splits breakdown */}
+                  <div className="bg-slate-50 dark:bg-neutral-900/40 p-2.5 rounded-xl border border-gray-200/50 dark:border-neutral-800/40 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center text-xs">
+                    <div>
+                      <div className="text-[10px] text-gray-400 font-mono uppercase tracking-wider mb-1">Paid Upfront By</div>
+                      <div className="flex items-center gap-1.5">
+                        <img 
+                          src={isA ? partnerA.avatar : partnerB.avatar} 
+                          alt={isA ? partnerA.name : partnerB.name} 
+                          className="w-5 h-5 rounded-full object-cover border border-gray-300 dark:border-subtle"
+                          referrerPolicy="no-referrer"
+                        />
+                        <span className="text-xs text-gray-800 dark:text-[#e0d8d0] font-bold">
+                          {isA ? partnerA.name : partnerB.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 sm:max-w-[150px]">
+                      <div className="text-[10px] text-gray-400 font-mono uppercase tracking-wider mb-1">Splits Breakdown</div>
+                      <div className="space-y-0.5">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">{partnerA.name}:</span>
+                          <span className="font-semibold font-mono text-gray-800 dark:text-neutral-300">${exp.splitDetails.user_a.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">{partnerB.name}:</span>
+                          <span className="font-semibold font-mono text-gray-800 dark:text-neutral-300">${exp.splitDetails.user_b.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 4: Action buttons */}
+                  <div className="flex justify-end gap-2 pt-1 border-t border-gray-100 dark:border-neutral-800/40">
+                    <button
+                      onClick={() => handleStartEdit(exp)}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-subtle text-gray-600 dark:text-neutral-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => onDeleteExpense(exp.id)}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-subtle text-gray-600 dark:text-neutral-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop View: Full Grid Table (hidden on mobile) */}
+        <div className="hidden md:block overflow-x-auto scrollbar-thin">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-100 dark:bg-neutral-900/40 border-b border-gray-300 dark:border-subtle text-[10px] font-mono uppercase tracking-wider text-gray-700 dark:text-neutral-500">
