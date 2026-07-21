@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isMemberOfHouse(houseId) {
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/houses/$(houseId)).data.partnerA_uid == request.auth.uid ||
+        get(/databases/$(database)/documents/houses/$(houseId)).data.partnerB_uid == request.auth.uid
+      );
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId 
+        && (!request.resource.data.keys().hasAll(['uid']) || request.resource.data.uid == userId);
+    }
+
+    // House Rules
+    match /houses/{houseId} {
+      allow read: if isSignedIn() && (
+        resource.data.partnerA_uid == request.auth.uid ||
+        resource.data.partnerB_uid == request.auth.uid
+      );
+      
+      allow create: if isSignedIn() && isValidId(houseId);
+      
+      allow update: if isSignedIn() && (
+        // Allow members of the house to update details
+        resource.data.partnerA_uid == request.auth.uid ||
+        resource.data.partnerB_uid == request.auth.uid ||
+        // Or allow a user to join if they provide the correct joinPassword
+        request.resource.data.joinPassword == resource.data.joinPassword
+      );
+    }
+
+    // Subcollections under House
+    match /houses/{houseId}/expenses/{expenseId} {
+      allow read, write: if isMemberOfHouse(houseId);
+    }
+
+    match /houses/{houseId}/categories/{categoryId} {
+      allow read, write: if isMemberOfHouse(houseId);
+    }
+
+    match /houses/{houseId}/reminders/{reminderId} {
+      allow read, write: if isMemberOfHouse(houseId);
+    }
+
+    match /houses/{houseId}/goals/{goalId} {
+      allow read, write: if isMemberOfHouse(houseId);
+    }
+
+    match /houses/{houseId}/logs/{logId} {
+      allow read, write: if isMemberOfHouse(houseId);
+    }
+  }
+}

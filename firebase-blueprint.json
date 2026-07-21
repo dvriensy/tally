@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile with household/house details",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "houseId": { "type": "string" },
+        "roleInHouse": { "type": "string", "enum": ["user_a", "user_b"] }
+      },
+      "required": ["uid", "email"]
+    },
+    "house": {
+      "title": "House",
+      "description": "Secure couple/roommate house group containing references to both users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "joinPassword": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "creatorUid": { "type": "string" },
+        "partnerA_uid": { "type": "string" },
+        "partnerB_uid": { "type": "string" },
+        "partnerA": { "type": "object" },
+        "partnerB": { "type": "object" }
+      },
+      "required": ["id", "name", "joinPassword", "createdAt", "creatorUid"]
+    },
+    "expense": {
+      "title": "Expense",
+      "description": "Shared expense transaction ledger entry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "paidById": { "type": "string", "enum": ["user_a", "user_b"] },
+        "splitType": { "type": "string", "enum": ["equal", "custom", "percentage"] },
+        "splitDetails": { "type": "object" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "amount", "category", "date", "paidById", "splitType", "splitDetails", "createdAt"]
+    },
+    "category": {
+      "title": "Category",
+      "description": "Custom budget category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "color": { "type": "string" },
+        "icon": { "type": "string" },
+        "limit": { "type": "number" }
+      },
+      "required": ["id", "name", "color", "icon", "limit"]
+    },
+    "reminder": {
+      "title": "Reminder",
+      "description": "Scheduled payment or bill reminder",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "amount": { "type": "number" },
+        "dueDate": { "type": "string" },
+        "frequency": { "type": "string", "enum": ["monthly", "weekly", "one-time"] },
+        "assignedTo": { "type": "string", "enum": ["user_a", "user_b", "both"] },
+        "isPaid": { "type": "boolean" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "title", "amount", "dueDate", "frequency", "assignedTo", "isPaid", "category"]
+    },
+    "goal": {
+      "title": "Goal",
+      "description": "Shared savings goal target milestone",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "currentAmount": { "type": "number" },
+        "targetDate": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "targetAmount", "currentAmount", "targetDate", "createdAt"]
+    },
+    "log": {
+      "title": "Log",
+      "description": "Audit trail log of activities in the house",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string", "enum": ["user_a", "user_b"] },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "userId", "userName", "action", "details", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profiles with name, email, and house info"
+    },
+    "/houses/{houseId}": {
+      "schema": "house",
+      "description": "Secure roommate houses/couples"
+    },
+    "/houses/{houseId}/expenses/{expenseId}": {
+      "schema": "expense",
+      "description": "Household expenses"
+    },
+    "/houses/{houseId}/categories/{categoryId}": {
+      "schema": "category",
+      "description": "Household custom categories"
+    },
+    "/houses/{houseId}/reminders/{reminderId}": {
+      "schema": "reminder",
+      "description": "Household bill reminders"
+    },
+    "/houses/{houseId}/goals/{goalId}": {
+      "schema": "goal",
+      "description": "Household savings goals"
+    },
+    "/houses/{houseId}/logs/{logId}": {
+      "schema": "log",
+      "description": "Household audit logs"
+    }
+  }
+}

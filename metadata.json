@@ -1,0 +1,6 @@
+{
+  "name": "Tally",
+  "description": "A real-time expense splitter, budget tracker, and receipt OCR scanner for couples and roommates.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
