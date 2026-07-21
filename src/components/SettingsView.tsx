@@ -22,6 +22,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { BudgetCategory, Person, Expense } from "../types";
+import { AvatarSelector } from "./AvatarSelector";
 
 interface SettingsViewProps {
   partnerA: Person;
@@ -51,6 +52,10 @@ export function SettingsView({
   const [nameB, setNameB] = useState(partnerB.name);
   const [colorA, setColorA] = useState(partnerA.color);
   const [colorB, setColorB] = useState(partnerB.color);
+  const [avatarA, setAvatarA] = useState(partnerA.avatar);
+  const [avatarB, setAvatarB] = useState(partnerB.avatar);
+  const [showAvatarA, setShowAvatarA] = useState(false);
+  const [showAvatarB, setShowAvatarB] = useState(false);
   const [isTeamSaved, setIsTeamSaved] = useState(false);
 
   // New Category State
@@ -64,8 +69,8 @@ export function SettingsView({
   // Team Save action
   const handleSaveTeam = async () => {
     await onUpdatePartners(
-      { ...partnerA, name: nameA, color: colorA },
-      { ...partnerB, name: nameB, color: colorB }
+      { ...partnerA, name: nameA, color: colorA, avatar: avatarA },
+      { ...partnerB, name: nameB, color: colorB, avatar: avatarB }
     );
     setIsTeamSaved(true);
     setTimeout(() => setIsTeamSaved(false), 2000);
@@ -140,9 +145,36 @@ export function SettingsView({
             {/* Partner A */}
             <div className="p-3 bg-gray-50 dark:bg-neutral-900/30 border border-gray-300 dark:border-subtle rounded-lg space-y-3">
               <div className="flex items-center gap-3">
-                <img src={partnerA.avatar} alt="A" className="w-10 h-10 rounded-full object-cover border-2" style={{ borderColor: colorA }} referrerPolicy="no-referrer" />
-                <span className="text-xs font-mono text-gray-700 dark:text-neutral-500 font-bold">Partner A Profile</span>
+                <img src={avatarA} alt="A" className="w-10 h-10 rounded-full object-cover border-2" style={{ borderColor: colorA }} referrerPolicy="no-referrer" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-mono text-gray-700 dark:text-neutral-500 font-bold">Partner A Profile</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarA(!showAvatarA)}
+                    className="text-[9px] uppercase font-mono tracking-wider font-extrabold text-emerald-600 dark:text-accent-emerald hover:underline text-left"
+                  >
+                    {showAvatarA ? "Hide Avatar Options" : "Change Picture / Camera Shot"}
+                  </button>
+                </div>
               </div>
+              
+              <AnimatePresence>
+                {showAvatarA && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden border-t border-gray-200/50 dark:border-subtle pt-2"
+                  >
+                    <AvatarSelector
+                      currentAvatar={avatarA}
+                      onSelectAvatar={(url) => setAvatarA(url)}
+                      themeColor={colorA}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] text-gray-700 dark:text-neutral-500 font-mono mb-1 font-bold">Display Name</label>
@@ -168,9 +200,36 @@ export function SettingsView({
             {/* Partner B */}
             <div className="p-3 bg-gray-50 dark:bg-neutral-900/30 border border-gray-300 dark:border-subtle rounded-lg space-y-3">
               <div className="flex items-center gap-3">
-                <img src={partnerB.avatar} alt="B" className="w-10 h-10 rounded-full object-cover border-2" style={{ borderColor: colorB }} referrerPolicy="no-referrer" />
-                <span className="text-xs font-mono text-gray-700 dark:text-neutral-500 font-bold">Partner B Profile</span>
+                <img src={avatarB} alt="B" className="w-10 h-10 rounded-full object-cover border-2" style={{ borderColor: colorB }} referrerPolicy="no-referrer" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-mono text-gray-700 dark:text-neutral-500 font-bold">Partner B Profile</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAvatarB(!showAvatarB)}
+                    className="text-[9px] uppercase font-mono tracking-wider font-extrabold text-emerald-600 dark:text-accent-emerald hover:underline text-left"
+                  >
+                    {showAvatarB ? "Hide Avatar Options" : "Change Picture / Camera Shot"}
+                  </button>
+                </div>
               </div>
+
+              <AnimatePresence>
+                {showAvatarB && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden border-t border-gray-200/50 dark:border-subtle pt-2"
+                  >
+                    <AvatarSelector
+                      currentAvatar={avatarB}
+                      onSelectAvatar={(url) => setAvatarB(url)}
+                      themeColor={colorB}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] text-gray-700 dark:text-neutral-500 font-mono mb-1 font-bold">Display Name</label>

@@ -26,6 +26,7 @@ interface ExpensesViewProps {
   partnerB: Person;
   currentUser: "user_a" | "user_b";
   onAddExpense: (expense: Omit<Expense, "id" | "createdAt">) => Promise<void>;
+  onUpdateExpense?: (id: string, expense: Omit<Expense, "id" | "createdAt">) => Promise<void>;
   onDeleteExpense: (id: string) => Promise<void>;
   scanReceiptOCR: (base64Image: string, mimeType: string) => Promise<any>;
 }
@@ -37,6 +38,7 @@ export function ExpensesView({
   partnerB,
   currentUser,
   onAddExpense,
+  onUpdateExpense,
   onDeleteExpense,
   scanReceiptOCR
 }: ExpensesViewProps) {
@@ -49,6 +51,7 @@ export function ExpensesView({
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
 
   // Form Fields
   const [title, setTitle] = useState("");
@@ -63,6 +66,32 @@ export function ExpensesView({
   const [shareB, setShareB] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenAdd = () => {
+    setEditingExpenseId(null);
+    setTitle("");
+    setAmount("");
+    setCategory(categories[0]?.name || "Groceries");
+    setDate(new Date().toISOString().split("T")[0]);
+    setPaidBy(currentUser);
+    setSplitType("equal");
+    setShareA("");
+    setShareB("");
+    setIsAddOpen(true);
+  };
+
+  const handleStartEdit = (exp: Expense) => {
+    setEditingExpenseId(exp.id);
+    setTitle(exp.title);
+    setAmount(String(exp.amount));
+    setCategory(exp.category);
+    setDate(exp.date);
+    setPaidBy(exp.paidById);
+    setSplitType(exp.splitType === "percentage" ? "custom" : exp.splitType);
+    setShareA(String(exp.splitDetails?.user_a || ""));
+    setShareB(String(exp.splitDetails?.user_b || ""));
+    setIsAddOpen(true);
+  };
 
   // Filtered Expenses
   const filteredExpenses = expenses.filter((exp) => {
@@ -102,20 +131,36 @@ export function ExpensesView({
       finalShareB = sBNum;
     }
 
-    await onAddExpense({
-      title,
-      amount: currentAmountNum,
-      category,
-      date,
-      paidById: paidBy,
-      splitType,
-      splitDetails: {
-        user_a: finalShareA,
-        user_b: finalShareB
-      }
-    });
+    if (editingExpenseId && onUpdateExpense) {
+      await onUpdateExpense(editingExpenseId, {
+        title,
+        amount: currentAmountNum,
+        category,
+        date,
+        paidById: paidBy,
+        splitType,
+        splitDetails: {
+          user_a: finalShareA,
+          user_b: finalShareB
+        }
+      });
+    } else {
+      await onAddExpense({
+        title,
+        amount: currentAmountNum,
+        category,
+        date,
+        paidById: paidBy,
+        splitType,
+        splitDetails: {
+          user_a: finalShareA,
+          user_b: finalShareB
+        }
+      });
+    }
 
     // Reset Form
+    setEditingExpenseId(null);
     setTitle("");
     setAmount("");
     setShareA("");
@@ -215,7 +260,7 @@ export function ExpensesView({
           <p className="text-xs text-gray-500 dark:text-[#e0d8d0] opacity-80">Track and split bills in real-time</p>
         </div>
         <button
-          onClick={() => setIsAddOpen(true)}
+          onClick={handleOpenAdd}
           className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-medium px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -357,14 +402,24 @@ export function ExpensesView({
                         ${exp.amount.toFixed(2)}
                       </td>
 
-                      {/* Trash action */}
+                      {/* Edit and Trash action */}
                       <td className="py-4 px-6 text-right">
-                        <button
-                          onClick={() => onDeleteExpense(exp.id)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleStartEdit(exp)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-all cursor-pointer"
+                            title="Edit Expense"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => onDeleteExpense(exp.id)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
+                            title="Delete Expense"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </motion.tr>
                   );
@@ -387,7 +442,9 @@ export function ExpensesView({
             >
               <div className="flex justify-between items-start mb-6 border-b border-gray-200/50 dark:border-subtle pb-4">
                 <div>
-                  <h3 className="serif text-xl italic text-gray-900 dark:text-white font-medium">Record Shared Expense</h3>
+                  <h3 className="serif text-xl italic text-gray-900 dark:text-white font-medium">
+                    {editingExpenseId ? "Edit Shared Expense" : "Record Shared Expense"}
+                  </h3>
                   <p className="text-xs text-gray-400 mt-1">Fill in manually or utilize Gemini OCR to scan a receipt</p>
                 </div>
                 <button

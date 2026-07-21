@@ -13,6 +13,8 @@ import { GoalsView } from "./components/GoalsView";
 import { SettingsView } from "./components/SettingsView";
 import LoginView from "./components/LoginView";
 import HouseSetupView from "./components/HouseSetupView";
+import { HouseholdView } from "./components/HouseholdView";
+import { AnimatedLogo } from "./components/AnimatedLogo";
 import { auth, db, isFirebaseAvailable } from "./firebase";
 import { onAuthStateChanged, signOut, User as FirebaseUser } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -35,6 +37,7 @@ export default function App() {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | "local_demo" | null>(null);
   const [houseId, setHouseId] = useState<string | null>(null);
   const [role, setRole] = useState<"user_a" | "user_b">("user_a");
+  const [userDisplayName, setUserDisplayName] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
@@ -43,6 +46,7 @@ export default function App() {
       setFirebaseUser("local_demo");
       setHouseId("demo_house");
       setRole("user_a");
+      setUserDisplayName("Alex");
       setAuthLoading(false);
       return;
     }
@@ -50,10 +54,14 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setFirebaseUser(user);
+        setUserDisplayName(user.displayName);
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
           if (userDoc.exists()) {
             const data = userDoc.data();
+            if (data.displayName) {
+              setUserDisplayName(data.displayName);
+            }
             if (data.houseId && data.roleInHouse) {
               setHouseId(data.houseId);
               setRole(data.roleInHouse);
@@ -70,6 +78,7 @@ export default function App() {
       } else {
         setFirebaseUser(null);
         setHouseId(null);
+        setUserDisplayName(null);
       }
       setAuthLoading(false);
     });
@@ -113,7 +122,7 @@ export default function App() {
     return (
       <HouseSetupView
         userId={firebaseUser.uid}
-        userDisplayName={firebaseUser.displayName}
+        userDisplayName={userDisplayName}
         onSetupComplete={(hId, r) => {
           setHouseId(hId);
           setRole(r);
@@ -141,7 +150,7 @@ interface AppWithStoreProps {
 
 function AppWithStore({ houseId, role, onSignOut, isDemo }: AppWithStoreProps) {
   const store = useBudgetStore(houseId, role);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "expenses" | "calendar" | "goals" | "settings">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "expenses" | "calendar" | "goals" | "household" | "settings">("dashboard");
 
   const summary = store.getSplitsSummary();
 
@@ -149,6 +158,7 @@ function AppWithStore({ houseId, role, onSignOut, isDemo }: AppWithStoreProps) {
   const tabs = [
     { id: "dashboard", name: "Dashboard Overview", icon: LayoutDashboard },
     { id: "expenses", name: "Expenses Ledger", icon: DollarSign },
+    { id: "household", name: "Household Hub", icon: Home },
     { id: "calendar", name: "Bills Calendar", icon: CalendarIcon },
     { id: "goals", name: "Savings Milestones", icon: PiggyBank },
     { id: "settings", name: "Control Center", icon: SettingsIcon }
@@ -169,38 +179,33 @@ function AppWithStore({ houseId, role, onSignOut, isDemo }: AppWithStoreProps) {
         <header className="sticky top-0 z-30 bg-white/95 dark:bg-sophisticated-bg/90 backdrop-blur-md border-b border-gray-300 dark:border-subtle">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             
-            {/* Logo Title - Styled with beautiful Serif and pulse indicator */}
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full border border-gray-300 dark:border-subtle flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              </div>
-              <div>
-                <h1 className="serif text-2xl italic tracking-tight text-gray-900 dark:text-white">Tally</h1>
-                
-                {/* Cloud Synchronization status indicator */}
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  {store.syncStatus === "synced" ? (
-                    <span className="flex items-center gap-1 text-[9px] text-emerald-600 dark:text-accent-emerald font-mono uppercase tracking-wider font-semibold">
-                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                      Live Sync Active
-                    </span>
-                  ) : store.syncStatus === "syncing" ? (
-                    <span className="flex items-center gap-1 text-[9px] text-amber-600 dark:text-accent-amber font-mono uppercase tracking-wider font-semibold">
-                      <RefreshCw className="w-2 h-2 animate-spin" />
-                      Syncing...
-                    </span>
-                  ) : store.syncStatus === "offline" ? (
-                    <span className="flex items-center gap-1 text-[9px] text-neutral-500 dark:text-neutral-400 font-mono uppercase tracking-wider">
-                      <span className="w-1 h-1 rounded-full bg-neutral-400" />
-                      Offline Mode
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[9px] text-rose-500 dark:text-accent-rose font-mono uppercase tracking-wider font-semibold">
-                      <span className="w-1 h-1 rounded-full bg-rose-500" />
-                      Sync Alert
-                    </span>
-                  )}
-                </div>
+            {/* Logo Title - Beautifully Animated & Fun Logo and name lettering */}
+            <div className="flex flex-col items-start gap-1">
+              <AnimatedLogo />
+              
+              {/* Cloud Synchronization status indicator */}
+              <div className="flex items-center gap-1.5 pl-2 mt-[-4px]">
+                {store.syncStatus === "synced" ? (
+                  <span className="flex items-center gap-1 text-[9px] text-emerald-600 dark:text-accent-emerald font-mono uppercase tracking-wider font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Sync Active
+                  </span>
+                ) : store.syncStatus === "syncing" ? (
+                  <span className="flex items-center gap-1 text-[9px] text-amber-600 dark:text-accent-amber font-mono uppercase tracking-wider font-semibold">
+                    <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                    Syncing...
+                  </span>
+                ) : store.syncStatus === "offline" ? (
+                  <span className="flex items-center gap-1 text-[9px] text-neutral-500 dark:text-neutral-400 font-mono uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                    Offline Mode
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-[9px] text-rose-500 dark:text-accent-rose font-mono uppercase tracking-wider font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    Sync Alert
+                  </span>
+                )}
               </div>
             </div>
 
@@ -214,35 +219,51 @@ function AppWithStore({ houseId, role, onSignOut, isDemo }: AppWithStoreProps) {
               )}
 
               {/* Active Role/Simulation switcher */}
-              <div className="flex items-center gap-1.5 bg-gray-200 dark:bg-sophisticated-card p-1 rounded-full border border-gray-300 dark:border-subtle">
-                <span className="text-[9px] font-mono text-gray-600 dark:text-neutral-500 uppercase tracking-widest pl-2.5 pr-0.5">
-                  {isDemo ? "Simulate:" : "Active:"}
-                </span>
-                <button
-                  onClick={() => isDemo && store.switchUser("user_a")}
-                  disabled={!isDemo}
-                  className={`flex items-center gap-1 py-1 px-3 rounded-full text-xs font-semibold transition-all ${
-                    store.currentUser === "user_a"
-                      ? "bg-white dark:bg-neutral-800 shadow-xs text-gray-900 dark:text-white border border-gray-300 dark:border-subtle"
-                      : "text-gray-600 dark:text-slate-400 opacity-60 hover:opacity-100"
-                  } ${!isDemo ? "cursor-default" : "cursor-pointer"}`}
-                >
-                  <img src={store.partnerA.avatar} alt="A" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" />
-                  {store.partnerA.name}
-                </button>
-                <button
-                  onClick={() => isDemo && store.switchUser("user_b")}
-                  disabled={!isDemo}
-                  className={`flex items-center gap-1 py-1 px-3 rounded-full text-xs font-semibold transition-all ${
-                    store.currentUser === "user_b"
-                      ? "bg-white dark:bg-neutral-800 shadow-xs text-gray-900 dark:text-white border border-gray-300 dark:border-subtle"
-                      : "text-gray-600 dark:text-slate-400 opacity-60 hover:opacity-100"
-                  } ${!isDemo ? "cursor-default" : "cursor-pointer"}`}
-                >
-                  <img src={store.partnerB.avatar} alt="B" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" />
-                  {store.partnerB.name}
-                </button>
-              </div>
+              {!isDemo ? (
+                <div className="flex items-center gap-2 bg-gray-200 dark:bg-sophisticated-card py-1.5 px-3.5 rounded-full border border-gray-300 dark:border-subtle">
+                  <span className="text-[10px] font-mono text-gray-600 dark:text-neutral-500 uppercase tracking-widest font-semibold">Logged In:</span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-950 dark:text-white">
+                    <img
+                      src={store.currentUser === "user_a" ? store.partnerA.avatar : store.partnerB.avatar}
+                      alt="Avatar"
+                      className="w-5 h-5 rounded-full object-cover border border-emerald-500"
+                      referrerPolicy="no-referrer"
+                    />
+                    <span>{store.currentUser === "user_a" ? store.partnerA.name : store.partnerB.name}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-300/50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 font-mono uppercase">
+                      {store.currentUser === "user_a" ? "Partner A" : "Partner B"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 bg-gray-200 dark:bg-sophisticated-card p-1 rounded-full border border-gray-300 dark:border-subtle">
+                  <span className="text-[9px] font-mono text-gray-600 dark:text-neutral-500 uppercase tracking-widest pl-2.5 pr-0.5">
+                    Simulate:
+                  </span>
+                  <button
+                    onClick={() => store.switchUser("user_a")}
+                    className={`flex items-center gap-1 py-1 px-3 rounded-full text-xs font-semibold transition-all ${
+                      store.currentUser === "user_a"
+                        ? "bg-white dark:bg-neutral-800 shadow-xs text-gray-900 dark:text-white border border-gray-300 dark:border-subtle"
+                        : "text-gray-600 dark:text-slate-400 opacity-60 hover:opacity-100"
+                    } cursor-pointer`}
+                  >
+                    <img src={store.partnerA.avatar} alt="A" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" />
+                    {store.partnerA.name}
+                  </button>
+                  <button
+                    onClick={() => store.switchUser("user_b")}
+                    className={`flex items-center gap-1 py-1 px-3 rounded-full text-xs font-semibold transition-all ${
+                      store.currentUser === "user_b"
+                        ? "bg-white dark:bg-neutral-800 shadow-xs text-gray-900 dark:text-white border border-gray-300 dark:border-subtle"
+                        : "text-gray-600 dark:text-slate-400 opacity-60 hover:opacity-100"
+                    } cursor-pointer`}
+                  >
+                    <img src={store.partnerB.avatar} alt="B" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" />
+                    {store.partnerB.name}
+                  </button>
+                </div>
+              )}
 
               {/* Quick Simulate Device Biometric lock action */}
               {store.isBiometricEnabled && (
@@ -326,8 +347,23 @@ function AppWithStore({ houseId, role, onSignOut, isDemo }: AppWithStoreProps) {
                 partnerB={store.partnerB}
                 currentUser={store.currentUser}
                 onAddExpense={store.addExpense}
+                onUpdateExpense={store.updateExpense}
                 onDeleteExpense={store.deleteExpense}
                 scanReceiptOCR={store.scanReceiptOCR}
+              />
+            )}
+
+            {activeTab === "household" && (
+              <HouseholdView
+                houseId={houseId}
+                houseName={store.houseName}
+                joinPassword={store.joinPassword}
+                partnerA={store.partnerA}
+                partnerB={store.partnerB}
+                currentUserRole={role}
+                isDemo={isDemo}
+                partnerA_uid={store.partnerA_uid}
+                partnerB_uid={store.partnerB_uid}
               />
             )}
 

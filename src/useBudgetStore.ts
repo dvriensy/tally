@@ -144,6 +144,12 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
   const [partnerA, setPartnerA] = useState<Person>(INITIAL_PARTNERS.user_a);
   const [partnerB, setPartnerB] = useState<Person>(INITIAL_PARTNERS.user_b);
   
+  // House profile states
+  const [houseName, setHouseName] = useState<string>("Alex & Taylor's Nest");
+  const [joinPassword, setJoinPassword] = useState<string>("nest123");
+  const [partnerA_uid, setPartnerA_uid] = useState<string | null>(null);
+  const [partnerB_uid, setPartnerB_uid] = useState<string | null>(null);
+  
   // App States
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<BudgetCategory[]>([]);
@@ -164,7 +170,7 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
   // Theme State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("budget_dark_mode");
-    return saved === "true" || true; // Default to dark theme since it's beautiful and requested!
+    return saved === null ? true : saved === "true";
   });
 
   // Cloud Sync status
@@ -225,11 +231,16 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
       const unsubHouse = onSnapshot(doc(db, "houses", houseId), (docSnap) => {
         if (docSnap.exists()) {
           const houseData = docSnap.data();
+          if (houseData.name) setHouseName(houseData.name);
+          if (houseData.joinPassword) setJoinPassword(houseData.joinPassword);
+          setPartnerA_uid(houseData.partnerA_uid || null);
+          setPartnerB_uid(houseData.partnerB_uid || null);
           if (houseData.partnerA) setPartnerA(houseData.partnerA as Person);
           if (houseData.partnerB) setPartnerB(houseData.partnerB as Person);
         } else {
           // Seed the house partners if they don't exist yet
           setDoc(doc(db, "houses", houseId), cleanData({
+            name: "Alex & Taylor's Nest",
             partnerA: INITIAL_PARTNERS.user_a,
             partnerB: INITIAL_PARTNERS.user_b
           }), { merge: true });
@@ -255,9 +266,13 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
       // 3. Expenses
       const unsubExpenses = onSnapshot(collection(db, "houses", houseId, "expenses"), (snapshot) => {
         if (snapshot.empty) {
-          INITIAL_EXPENSES.forEach((exp) => {
-            setDoc(doc(db, "houses", houseId, "expenses", exp.id), cleanData(exp));
-          });
+          if (houseId === "demo_house") {
+            INITIAL_EXPENSES.forEach((exp) => {
+              setDoc(doc(db, "houses", houseId, "expenses", exp.id), cleanData(exp));
+            });
+          } else {
+            setExpenses([]);
+          }
         } else {
           const list: Expense[] = [];
           snapshot.forEach((doc) => list.push(doc.data() as Expense));
@@ -271,9 +286,13 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
       // 4. Reminders
       const unsubReminders = onSnapshot(collection(db, "houses", houseId, "reminders"), (snapshot) => {
         if (snapshot.empty) {
-          INITIAL_REMINDERS.forEach((rem) => {
-            setDoc(doc(db, "houses", houseId, "reminders", rem.id), cleanData(rem));
-          });
+          if (houseId === "demo_house") {
+            INITIAL_REMINDERS.forEach((rem) => {
+              setDoc(doc(db, "houses", houseId, "reminders", rem.id), cleanData(rem));
+            });
+          } else {
+            setReminders([]);
+          }
         } else {
           const list: PaymentReminder[] = [];
           snapshot.forEach((doc) => list.push(doc.data() as PaymentReminder));
@@ -285,9 +304,13 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
       // 5. Goals
       const unsubGoals = onSnapshot(collection(db, "houses", houseId, "goals"), (snapshot) => {
         if (snapshot.empty) {
-          INITIAL_GOALS.forEach((g) => {
-            setDoc(doc(db, "houses", houseId, "goals", g.id), cleanData(g));
-          });
+          if (houseId === "demo_house") {
+            INITIAL_GOALS.forEach((g) => {
+              setDoc(doc(db, "houses", houseId, "goals", g.id), cleanData(g));
+            });
+          } else {
+            setGoals([]);
+          }
         } else {
           const list: Goal[] = [];
           snapshot.forEach((doc) => list.push(doc.data() as Goal));
@@ -327,17 +350,24 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
     const localPartnerA = localStorage.getItem("budget_partner_a");
     const localPartnerB = localStorage.getItem("budget_partner_b");
 
+    const isDemoHouse = !houseId || houseId === "demo_house";
+
     if (localExpenses) setExpenses(JSON.parse(localExpenses));
-    else setExpenses(INITIAL_EXPENSES);
+    else setExpenses(isDemoHouse ? INITIAL_EXPENSES : []);
+
+    const localHouseName = localStorage.getItem("budget_house_name");
+    const localJoinPassword = localStorage.getItem("budget_join_password");
+    if (localHouseName) setHouseName(localHouseName);
+    if (localJoinPassword) setJoinPassword(localJoinPassword);
 
     if (localCategories) setCategories(JSON.parse(localCategories));
     else setCategories(DEFAULT_CATEGORIES);
 
     if (localReminders) setReminders(JSON.parse(localReminders));
-    else setReminders(INITIAL_REMINDERS);
+    else setReminders(isDemoHouse ? INITIAL_REMINDERS : []);
 
     if (localGoals) setGoals(JSON.parse(localGoals));
-    else setGoals(INITIAL_GOALS);
+    else setGoals(isDemoHouse ? INITIAL_GOALS : []);
 
     if (localLogs) setActivityLogs(JSON.parse(localLogs));
     else setActivityLogs([]);
@@ -363,6 +393,8 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
     localStorage.setItem("budget_logs", JSON.stringify(updatedLogs));
     localStorage.setItem("budget_partner_a", JSON.stringify(pA));
     localStorage.setItem("budget_partner_b", JSON.stringify(pB));
+    localStorage.setItem("budget_house_name", houseName);
+    localStorage.setItem("budget_join_password", joinPassword);
   };
 
   // Helper: Log actions
@@ -432,6 +464,30 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
 
     if (isFirebaseAvailable && db && houseId) {
       await addLog("Add Expense", `Added shared expense of $${newExpense.amount.toFixed(2)} for "${newExpense.title}"`);
+    }
+  };
+
+  const updateExpense = async (id: string, updatedInput: Omit<Expense, "id" | "createdAt">) => {
+    const target = expenses.find((e) => e.id === id);
+    if (!target) return;
+
+    const updatedExpense: Expense = {
+      ...target,
+      ...updatedInput,
+    };
+
+    const nextExpenses = expenses.map((e) => e.id === id ? updatedExpense : e);
+    setExpenses(nextExpenses);
+
+    if (isFirebaseAvailable && db && houseId) {
+      await setDoc(doc(db, "houses", houseId, "expenses", id), cleanData(updatedExpense));
+    } else {
+      const logs = await addLog("Update Expense", `Updated expense "${updatedExpense.title}" to $${updatedExpense.amount.toFixed(2)}`);
+      saveToLocalStorageState(nextExpenses, categories, reminders, goals, logs || activityLogs);
+    }
+
+    if (isFirebaseAvailable && db && houseId) {
+      await addLog("Update Expense", `Updated expense "${updatedExpense.title}" to $${updatedExpense.amount.toFixed(2)}`);
     }
   };
 
@@ -710,6 +766,10 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
     currentUser,
     partnerA,
     partnerB,
+    houseName,
+    joinPassword,
+    partnerA_uid,
+    partnerB_uid,
     expenses,
     categories,
     reminders,
@@ -726,6 +786,7 @@ export function useBudgetStore(houseId: string | null, initialRole: "user_a" | "
     switchUser,
     updatePartners,
     addExpense,
+    updateExpense,
     deleteExpense,
     addCategory,
     updateCategory,

@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { 
   auth, 
+  db,
   isFirebaseAvailable 
 } from "../firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { 
   signInWithPopup, 
   GoogleAuthProvider, 
@@ -60,8 +62,9 @@ export default function LoginView({ onLocalDemo }: LoginViewProps) {
       return;
     }
 
-    if (/\s/.test(cleanUsername)) {
-      setError("Username cannot contain spaces.");
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(cleanUsername)) {
+      setError("Username can only contain letters, numbers, underscores (_), and hyphens (-). Spaces or special symbols are not allowed.");
       return;
     }
 
@@ -74,16 +77,35 @@ export default function LoginView({ onLocalDemo }: LoginViewProps) {
       if (isRegistering) {
         const userCred = await createUserWithEmailAndPassword(auth, formattedEmail, password);
         await updateProfile(userCred.user, { displayName: cleanAccountName });
+        
+        // Save user profile to Firestore immediately
+        if (db) {
+          try {
+            await setDoc(doc(db, "users", userCred.user.uid), {
+              uid: userCred.user.uid,
+              displayName: cleanAccountName,
+              houseId: null,
+              roleInHouse: null
+            }, { merge: true });
+          } catch (dbErr) {
+            console.error("Failed to pre-save user profile to firestore:", dbErr);
+          }
+        }
       } else {
         await signInWithEmailAndPassword(auth, formattedEmail, password);
       }
     } catch (err: any) {
       console.error(err);
       let msg = err.message;
-      if (err.code === "auth/user-not-found") msg = "No account found with this username.";
-      if (err.code === "auth/wrong-password") msg = "Incorrect password.";
-      if (err.code === "auth/weak-password") msg = "Password should be at least 6 characters.";
-      if (err.code === "auth/operation-not-allowed") {
+      if (err.code === "auth/user-not-found" || err.code === "auth/invalid-credential") {
+        msg = "No account found with this username, or incorrect password.";
+      } else if (err.code === "auth/wrong-password") {
+        msg = "Incorrect password.";
+      } else if (err.code === "auth/weak-password") {
+        msg = "Password should be at least 6 characters.";
+      } else if (err.code === "auth/invalid-email") {
+        msg = "Invalid username format. Please use only letters, numbers, underscores, and hyphens.";
+      } else if (err.code === "auth/operation-not-allowed") {
         msg = "Email/Password Authentication is not enabled in your Firebase project. To fix this: \n1. Open your Firebase Console\n2. Go to Build > Authentication > Sign-in method\n3. Enable 'Email/Password' under native providers.";
       }
       setError(msg || "Authentication failed.");
